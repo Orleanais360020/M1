@@ -2,212 +2,694 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>M-1風 AI 審査員（5人）による面白さ採点アプリ</title>
+    <title>M-1風 AI グランプリ 採点システム</title>
     <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1b0b20, #3a0505);
+            --card-bg: rgba(20, 20, 20, 0.9);
+            --accent-gold: #f8d26a;
+            --accent-red: #e53935;
+            --accent-red-dark: #b71c1c;
+            --accent-white: #fdfdfd;
+            --border-soft: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
+            padding: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            margin: 20px;
-            background-color: #f7f7f7;
+            background: radial-gradient(circle at top, #3a0505 0, #000 55%);
+            color: #f5f5f5;
         }
+
+        .stage-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 10% -10%, rgba(255, 255, 255, 0.12), transparent 60%),
+                radial-gradient(circle at 90% -15%, rgba(255, 255, 255, 0.1), transparent 60%),
+                linear-gradient(135deg, rgba(229, 57, 53, 0.7), rgba(191, 54, 12, 0.7));
+            opacity: 0.4;
+            mix-blend-mode: screen;
+            z-index: -2;
+        }
+
+        .spotlight {
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            width: 140%;
+            height: 80%;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.35), transparent 70%);
+            transform: translateX(-50%);
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .app-shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 32px 16px 40px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .title-main {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.8), rgba(50, 50, 50, 0.8));
+            font-size: 13px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #f0f0f0;
+            margin-bottom: 10px;
+        }
+
+        .title-main span {
+            color: var(--accent-gold);
+        }
+
         h1 {
-            margin-bottom: 0.2em;
+            margin: 0;
+            font-size: 32px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
         }
-        .description {
-            margin-bottom: 1em;
-            color: #555;
+
+        .subtitle {
+            margin-top: 8px;
+            font-size: 13px;
+            color: #ddd;
         }
-        .input-area, .result-area {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr);
+            gap: 18px;
         }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px 16px 18px;
+            border: 1px solid var(--border-soft);
+            box-shadow:
+                0 16px 40px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.03);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .panel-title {
+            font-size: 17px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .panel-title-accent {
+            font-size: 13px;
+            color: var(--accent-gold);
+        }
+
+        .panel-sub {
+            font-size: 11px;
+            color: #bbb;
+        }
+
         label {
             display: block;
             margin-bottom: 8px;
+            font-size: 13px;
         }
+
+        .input-label-main {
+            margin-top: 6px;
+        }
+
+        .input-note {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 3px;
+        }
+
+        input[type="text"],
         textarea {
             width: 100%;
-            box-sizing: border-box;
-            padding: 8px;
-            margin-top: 4px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+            padding: 8px 10px;
+            margin-top: 3px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.6);
+            color: #f5f5f5;
             font-family: inherit;
-            font-size: 14px;
+            font-size: 13px;
+        }
+
+        input[type="text"]::placeholder,
+        textarea::placeholder {
+            color: #888;
+        }
+
+        textarea {
             min-height: 160px;
             resize: vertical;
         }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 1px rgba(248, 210, 106, 0.5);
+        }
+
+        .button-row {
+            margin-top: 12px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
         button {
-            padding: 10px 18px;
-            border-radius: 4px;
+            padding: 9px 18px;
+            border-radius: 999px;
             border: none;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
-            background-color: #007bff;
-            color: white;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-red-dark));
+            color: var(--accent-white);
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            box-shadow:
+                0 8px 20px rgba(0, 0, 0, 0.7),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
         }
+
         button:disabled {
-            background-color: #cccccc;
+            background: #555;
             cursor: not-allowed;
+            box-shadow: none;
         }
-        .note {
+
+        .status {
+            min-height: 20px;
+            margin-top: 6px;
             font-size: 12px;
-            color: #777;
-            margin-top: 4px;
+            color: #ddd;
         }
+
+        .status-error {
+            color: #ff8a80;
+            white-space: pre-wrap;
+        }
+
+        .score-summary {
+            background: radial-gradient(circle at top, rgba(248, 210, 106, 0.16), transparent 70%);
+            border-radius: 12px;
+            border: 1px solid rgba(248, 210, 106, 0.4);
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .score-summary-main {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: #eee;
+        }
+
+        .score-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .score-sub {
+            font-size: 11px;
+            color: #ccc;
+        }
+
+        .score-tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.7), rgba(60, 60, 60, 0.7));
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-top: 12px;
+            margin-top: 8px;
+            font-size: 12px;
         }
+
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 6px;
             vertical-align: top;
-            font-size: 13px;
         }
+
         th {
-            background-color: #f0f0f0;
+            background: rgba(255, 255, 255, 0.06);
+            font-weight: 600;
         }
+
         .judge-name {
-            font-weight: bold;
+            font-weight: 600;
+            white-space: nowrap;
         }
+
         .score-cell {
             text-align: center;
-            font-weight: bold;
+            font-weight: 600;
         }
-        .error {
-            color: #b00020;
+
+        .comment-cell {
+            font-size: 11px;
+        }
+
+        .error-text {
+            color: #ff8a80;
             white-space: pre-wrap;
         }
-        .avg-score {
-            font-size: 16px;
-            font-weight: bold;
+
+        .leaderboard-section {
+            margin-top: 6px;
+        }
+
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 720px) {
+            .leaderboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .leaderboard-card {
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 70%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .leaderboard-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .leaderboard-title span {
+            font-size: 11px;
+            color: #ccc;
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 4px 0 0;
+        }
+
+        .leaderboard-item {
+            display: grid;
+            grid-template-columns: 40px minmax(0, 1fr) 60px;
+            gap: 6px;
+            align-items: baseline;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+
+        .lb-rank {
+            font-size: 12px;
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .lb-name {
+            font-size: 12px;
+        }
+
+        .lb-score {
+            font-size: 12px;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .leaderboard-empty {
+            font-size: 11px;
+            color: #bbb;
             margin-top: 4px;
+        }
+
+        .footer-note {
+            margin-top: 12px;
+            font-size: 10px;
+            color: #bbb;
+            text-align: right;
         }
     </style>
 </head>
 <body>
-    <h1>M-1風 AI 審査員による面白さ採点</h1>
-    <div class="description">
-        ユーザーが入力した文章を、M-1グランプリの審査員を模した5人のAI審査員が
-        0〜100点で採点し、コメントを返します。<br>
-        バックエンド（FastAPI + Gemini）がこのページと同じURLで動いている前提です。
-    </div>
+<div class="stage-bg"></div>
+<div class="spotlight"></div>
 
-    <div class="input-area">
-        <h2>1. ネタ入力</h2>
-        <label>
-            評価したい文章（漫才のネタ・一発ギャグの説明など）
-            <textarea id="userText" placeholder="ここに文章を入力してください"></textarea>
-        </label>
-        <button id="evaluateBtn">5人に採点してもらう</button>
-        <div class="note">
-            このページと同じサーバー上の <code>/api/evaluate</code> にリクエストを送ります。
+<div class="app-shell">
+    <header>
+        <div class="title-main">
+            <span>M-1</span> STYLE AI GRAND PRIX
         </div>
+        <h1>結果発表ステージ</h1>
+        <div class="subtitle">
+            コンビ名とネタを入力すると、5人のAI審査員がその場で採点します。
+        </div>
+    </header>
+
+    <div class="layout">
+        <!-- 左: 入力 + 個別結果 -->
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">
+                        ネタエントリー
+                    </div>
+                    <div class="panel-sub">
+                        コンビ名とネタを入力して「採点スタート」を押してください。
+                    </div>
+                </div>
+            </div>
+
+            <label>
+                コンビ名 / 芸名
+                <input type="text" id="entryName" placeholder="例）AIスパーク、コード漫才 など">
+                <div class="input-note">
+                    ランキングに表示される名前です（全角50文字程度まで）。
+                </div>
+            </label>
+
+            <label class="input-label-main">
+                ネタ本文
+                <textarea id="userText" placeholder="漫才のネタ、一発ギャグの説明、コントの設定などを自由に書いてください。"></textarea>
+            </label>
+
+            <div class="button-row">
+                <button id="evaluateBtn">採点スタート</button>
+            </div>
+            <div id="status" class="status"></div>
+
+            <div id="result" style="margin-top: 12px;"></div>
+        </section>
+
+        <!-- 右: ランキング -->
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">
+                        ランキングボード
+                        <span class="panel-title-accent">Best of Today & All Time</span>
+                    </div>
+                    <div class="panel-sub">
+                        AI審査員の平均点でランキングしています（同点の場合は先着順）。
+                    </div>
+                </div>
+            </div>
+
+            <div class="leaderboard-section">
+                <div class="leaderboard-grid">
+                    <div class="leaderboard-card">
+                        <div class="leaderboard-title">
+                            本日のランキング TOP3
+                            <span id="todayDateLabel"></span>
+                        </div>
+                        <ol id="dailyRanking" class="leaderboard-list"></ol>
+                        <div id="dailyEmpty" class="leaderboard-empty" style="display: none;">
+                            まだ本日のエントリーはありません。
+                        </div>
+                    </div>
+
+                    <div class="leaderboard-card">
+                        <div class="leaderboard-title">
+                            通算ランキング TOP3
+                            <span>全期間</span>
+                        </div>
+                        <ol id="allTimeRanking" class="leaderboard-list"></ol>
+                        <div id="allTimeEmpty" class="leaderboard-empty" style="display: none;">
+                            まだエントリーがありません。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-note">
+                ランキングはサーバー稼働中の記録に基づきます（再起動等でリセットされる場合があります）。
+            </div>
+        </section>
     </div>
+</div>
 
-    <div class="result-area">
-        <h2>2. 評価結果</h2>
-        <div id="status"></div>
-        <div id="result"></div>
-    </div>
+<script>
+    const API_BASE = "";
 
-    <script>
-        // バックエンドのベースURL（同一オリジンなので空文字にしておく）
-        const API_BASE = "";
+    function formatTodayJST() {
+        const now = new Date();
+        const jstOffset = 9 * 60;
+        const localOffset = now.getTimezoneOffset();
+        const diffMinutes = jstOffset + localOffset;
+        const jstTime = new Date(now.getTime() + diffMinutes * 60 * 1000);
+        const y = jstTime.getFullYear();
+        const m = String(jstTime.getMonth() + 1).padStart(2, "0");
+        const d = String(jstTime.getDate()).padStart(2, "0");
+        return `${y}/${m}/${d}（JST）`;
+    }
 
-        async function evaluate() {
-            const userTextEl = document.getElementById("userText");
-            const statusEl = document.getElementById("status");
-            const resultEl = document.getElementById("result");
-            const button = document.getElementById("evaluateBtn");
+    async function refreshLeaderboard() {
+        const dailyListEl = document.getElementById("dailyRanking");
+        const allTimeListEl = document.getElementById("allTimeRanking");
+        const dailyEmptyEl = document.getElementById("dailyEmpty");
+        const allTimeEmptyEl = document.getElementById("allTimeEmpty");
 
-            const text = userTextEl.value.trim();
-            if (!text) {
-                alert("評価したい文章を入力してください。");
-                return;
+        dailyListEl.innerHTML = "";
+        allTimeListEl.innerHTML = "";
+        dailyEmptyEl.style.display = "none";
+        allTimeEmptyEl.style.display = "none";
+
+        try {
+            const res = await fetch(`${API_BASE}/api/leaderboard`, {
+                method: "GET"
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
             }
 
-            statusEl.textContent = "AIが採点中です...";
-            resultEl.innerHTML = "";
-            button.disabled = true;
+            const data = await res.json();
 
-            try {
-                const response = await fetch(`${API_BASE}/api/evaluate`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ text }),
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+            function renderList(listEl, emptyEl, items) {
+                if (!items || items.length === 0) {
+                    emptyEl.style.display = "block";
+                    return;
                 }
+                for (const item of items) {
+                    const li = document.createElement("li");
+                    li.className = "leaderboard-item";
 
-                const data = await response.json();
+                    const rankSpan = document.createElement("div");
+                    rankSpan.className = "lb-rank";
+                    rankSpan.textContent = `${item.rank}位`;
 
-                button.disabled = false;
-                statusEl.textContent = "";
+                    const nameSpan = document.createElement("div");
+                    nameSpan.className = "lb-name";
+                    nameSpan.textContent = item.entry_name;
 
-                let html = "";
+                    const scoreSpan = document.createElement("div");
+                    scoreSpan.className = "lb-score";
+                    scoreSpan.textContent = `${item.average_score.toFixed(1)} 点`;
 
-                if (data.valid_count > 0 && data.average_score !== null) {
-                    html += `<div class="avg-score">平均点: ${data.average_score} / 100（有効スコア ${data.valid_count} 人）</div>`;
-                } else {
-                    html += `<div class="error">有効なスコアを取得できませんでした。プロンプトやモデル設定を調整してください。</div>`;
+                    li.appendChild(rankSpan);
+                    li.appendChild(nameSpan);
+                    li.appendChild(scoreSpan);
+
+                    listEl.appendChild(li);
                 }
-
-                html += `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>審査員</th>
-                                <th>スコア</th>
-                                <th>コメント</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                for (const row of data.results) {
-                    const scoreText = (row.score !== null && row.score !== undefined)
-                        ? String(row.score)
-                        : "-";
-                    const safeComment = (row.comment || "")
-                        .replace(/&/g, "&amp;")
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;");
-
-                    html += `
-                        <tr>
-                            <td class="judge-name">${row.judge_name}</td>
-                            <td class="score-cell">${scoreText}</td>
-                            <td>${safeComment}</td>
-                        </tr>
-                    `;
-                }
-
-                html += `
-                        </tbody>
-                    </table>
-                `;
-
-                resultEl.innerHTML = html;
-
-            } catch (e) {
-                button.disabled = false;
-                statusEl.innerHTML = `<div class="error">エラーが発生しました: ${String(e)}</div>`;
             }
+
+            renderList(dailyListEl, dailyEmptyEl, data.daily_top || []);
+            renderList(allTimeListEl, allTimeEmptyEl, data.all_time_top || []);
+
+        } catch (e) {
+            dailyEmptyEl.style.display = "block";
+            dailyEmptyEl.textContent = "ランキング情報の取得に失敗しました。";
+            allTimeEmptyEl.style.display = "block";
+            allTimeEmptyEl.textContent = "ランキング情報の取得に失敗しました。";
+        }
+    }
+
+    async function evaluate() {
+        const entryNameEl = document.getElementById("entryName");
+        const userTextEl = document.getElementById("userText");
+        const statusEl = document.getElementById("status");
+        const resultEl = document.getElementById("result");
+        const button = document.getElementById("evaluateBtn");
+
+        const entryName = entryNameEl.value.trim();
+        const text = userTextEl.value.trim();
+
+        if (!entryName) {
+            alert("コンビ名 / 芸名を入力してください。");
+            return;
+        }
+        if (!text) {
+            alert("ネタ本文を入力してください。");
+            return;
         }
 
-        document.getElementById("evaluateBtn").addEventListener("click", () => {
-            evaluate();
-        });
-    </script>
+        statusEl.textContent = "AI審査員が採点中です...";
+        statusEl.className = "status";
+        resultEl.innerHTML = "";
+        button.disabled = true;
+
+        try {
+            const response = await fetch(`${API_BASE}/api/evaluate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ text, entry_name: entryName }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            const data = await response.json();
+
+            button.disabled = false;
+            statusEl.textContent = "";
+
+            let html = "";
+
+            if (data.valid_count > 0 && data.average_score !== null) {
+                html += `
+                    <div class="score-summary">
+                        <div class="score-summary-main">
+                            <div class="score-label">エントリー名</div>
+                            <div class="score-sub">${escapeHtml(entryName)}</div>
+                        </div>
+                        <div class="score-summary-main">
+                            <div class="score-label">AI審査員 平均点</div>
+                            <div class="score-value">${data.average_score.toFixed(1)} 点</div>
+                        </div>
+                        <div class="score-tag">
+                            審査員 ${data.valid_count} 人の平均
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `<div class="error-text">有効なスコアを取得できませんでした。</div>`;
+            }
+
+            html += `
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 26%;">審査員</th>
+                            <th style="width: 10%;">スコア</th>
+                            <th>コメント</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            for (const row of data.results) {
+                const scoreText = (row.score !== null && row.score !== undefined)
+                    ? String(row.score)
+                    : "-";
+                const safeComment = escapeHtml(row.comment || "");
+                html += `
+                    <tr>
+                        <td class="judge-name">${escapeHtml(row.judge_name)}</td>
+                        <td class="score-cell">${scoreText}</td>
+                        <td class="comment-cell">${safeComment}</td>
+                    </tr>
+                `;
+            }
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            resultEl.innerHTML = html;
+
+            await refreshLeaderboard();
+
+        } catch (e) {
+            button.disabled = false;
+            statusEl.textContent = "";
+            statusEl.className = "status status-error";
+            statusEl.textContent = `エラーが発生しました: ${String(e)}`;
+        }
+    }
+
+    function escapeHtml(str) {
+        return (str || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+
+    document.getElementById("evaluateBtn").addEventListener("click", () => {
+        evaluate();
+    });
+
+    window.addEventListener("load", () => {
+        const todayLabelEl = document.getElementById("todayDateLabel");
+        todayLabelEl.textContent = formatTodayJST();
+        refreshLeaderboard();
+    });
+</script>
 </body>
 </html>
